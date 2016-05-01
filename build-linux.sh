@@ -104,7 +104,7 @@ fi
 # Github
 echo "Git clone vcash in src dir" | tee -a $VCASH_ROOT/build.log
 cd $VCASH_ROOT/
-git clone https://github.com/john-connor/vanillacoin.git src
+git clone -b pullreq https://github.com/xCoreDev/vanillacoin.git src
 
 # Deps
 if [[ $ALL_DEPS == 1 ]]; then
