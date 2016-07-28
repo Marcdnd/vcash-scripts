@@ -114,8 +114,8 @@ echo "Build boost system" | tee -a $VCASH_ROOT/build.log
 # Clean
 cd $VCASH_ROOT
 echo "Clean after install" | tee -a $VCASH_ROOT/build.log
-rm -Rf db-4.8.30/ openssl-*/
-rm openssl-*.tar.gz db-4.8.30.tar.gz boost_1_53_0.tar.gz
+rm -Rf db-6.1.29.NC/ openssl-*/
+rm openssl-*.tar.gz db-6.1.29.NC.tar.gz boost_1_53_0.tar.gz
 
 # Vcash daemon
 echo "vcashd bjam build" | tee -a $VCASH_ROOT/build.log
