@@ -53,9 +53,6 @@ fi
 # Remove build.log file
 rm -f $VCASH_ROOT/build.log
 
-# Backup dir
-mkdir -p $VCASH_ROOT/backup/
-
 # Rename daemon binary
 if [[ -f "$VCASH_ROOT/vanillacoind" ]]; then
 	mv $VCASH_ROOT/vanillacoind $VCASH_ROOT/vcashd
@@ -68,37 +65,9 @@ if [[ -d "$VCASH_ROOT/vanillacoin-src" ]]; then
 	echo "source dir renamed from vanillacoin-src/ to src/"
 fi
 
-# Check src dir & backup deps
-ALL_DEPS=0
-if [[ -d "$VCASH_ROOT/src" ]]; then
-	if [[ -d "$VCASH_ROOT/src/deps/boost" && "$VCASH_ROOT/src/deps/db" && "$VCASH_ROOT/src/deps/openssl" ]]; then
-		mv -f $VCASH_ROOT/src/deps/ $VCASH_ROOT/backup/
-		echo "Deps backed up." | tee -a $VCASH_ROOT/build.log
-		ALL_DEPS=1
-	elif [[ -d "$VCASH_ROOT/backup/deps/boost" && "$VCASH_ROOT/backup/deps/db" && "$VCASH_ROOT/backup/deps/openssl" ]]; then
-		echo "Deps already backed up." | tee -a $VCASH_ROOT/build.log
-		ALL_DEPS=1
-	fi
-else
-	if [[ -d "$VCASH_ROOT/backup/deps/boost" && "$VCASH_ROOT/backup/deps/db" && "$VCASH_ROOT/backup/deps/openssl" ]]; then
-		echo "Deps already backed up." | tee -a $VCASH_ROOT/build.log
-		ALL_DEPS=1
-	fi
-fi
-
 # Remove src dir
 echo "Clean before clone" | tee -a $VCASH_ROOT/build.log
 rm -Rf $VCASH_ROOT/src/
-
-# Check existing vcash binary
-echo "Check existing binary" | tee -a $VCASH_ROOT/build.log
-if [[ -f "$VCASH_ROOT/vcashd" ]]; then
-	BACKUP_VCASHD="vcashd-$(date +%s)"
-	echo "Existing vcashd binary ! Let's backup." | tee -a $VCASH_ROOT/build.log
-	mkdir -p $VCASH_ROOT/backup/
-	mv $VCASH_ROOT/vcashd $VCASH_ROOT/backup/$BACKUP_VCASHD
-	rm -f vcashd
-fi
 
 # Github
 echo "Git clone vcash in src dir" | tee -a $VCASH_ROOT/build.log
@@ -106,54 +75,47 @@ cd $VCASH_ROOT/
 git clone https://github.com/john-connor/vcash.git src
 
 # Deps
-if [[ $ALL_DEPS == 1 ]]; then
-	mv $VCASH_ROOT/backup/deps/boost/ $VCASH_ROOT/src/deps/
-	mv $VCASH_ROOT/backup/deps/db/ $VCASH_ROOT/src/deps/
-	mv $VCASH_ROOT/backup/deps/openssl/ $VCASH_ROOT/src/deps/
-	rm -Rf $VCASH_ROOT/backup/deps/
-	echo "Deps restored." | tee -a $VCASH_ROOT/build.log
-else
-	# OpenSSL
-	echo "OpenSSL Install" | tee -a $VCASH_ROOT/build.log
-	cd $VCASH_ROOT
-	wget "https://www.openssl.org/source/openssl-1.0.1s.tar.gz"
-	echo "e7e81d82f3cd538ab0cdba494006d44aab9dd96b7f6233ce9971fb7c7916d511  openssl-1.0.1s.tar.gz" | sha256sum -c
-	tar -xzf openssl-*.tar.gz
-	cd openssl-*
-	mkdir -p $VCASH_ROOT/src/deps/openssl/
-	./config threads no-comp --prefix=$VCASH_ROOT/src/deps/openssl/
-	make -j$job depend && make -j$job && make install
 
-	# DB
-	cd $VCASH_ROOT
-	wget --no-check-certificate "https://download.oracle.com/berkeley-db/db-6.1.29.NC.tar.gz"
-	echo "e3404de2e111e95751107d30454f569be9ec97325d5ea302c95a058f345dfe0e 6.1.29.NC.tar.gz" | sha256sum -c
-	tar -xzf db-6.1.29.NC.tar.gz
-	echo "Compile & install db in deps folder" | tee -a $VCASH_ROOT/build.log
-	cd db-6.1.29.NC/build_unix/
-	mkdir -p $VCASH_ROOT/src/deps/db/
-	../dist/configure --enable-cxx --disable-shared --prefix=$VCASH_ROOT/src/deps/db/
-	make -j$job && make install
+# OpenSSL
+echo "OpenSSL Install" | tee -a $VCASH_ROOT/build.log
+cd $VCASH_ROOT
+wget "https://www.openssl.org/source/openssl-1.0.1s.tar.gz"
+echo "e7e81d82f3cd538ab0cdba494006d44aab9dd96b7f6233ce9971fb7c7916d511  openssl-1.0.1s.tar.gz" | sha256sum -c
+tar -xzf openssl-*.tar.gz
+cd openssl-*
+mkdir -p $VCASH_ROOT/src/deps/openssl/
+./config threads no-comp --prefix=$VCASH_ROOT/src/deps/openssl/
+make -j$job depend && make -j$job && make install
 
-	# Boost
-	cd $VCASH_ROOT
-	wget "https://sourceforge.net/projects/boost/files/boost/1.53.0/boost_1_53_0.tar.gz"
-	echo "7c4d1515e0310e7f810cbbc19adb9b2d425f443cc7a00b4599742ee1bdfd4c39  boost_1_53_0.tar.gz" | sha256sum -c
-	echo "Extract boost" | tee -a $VCASH_ROOT/build.log
-	tar -xzf boost_1_53_0.tar.gz
-	echo "mv boost to deps folder & rename" | tee -a $VCASH_ROOT/build.log
-	mv boost_1_53_0 src/deps/boost
-	cd $VCASH_ROOT/src/deps/boost/
-	echo "Build boost system" | tee -a $VCASH_ROOT/build.log
-	./bootstrap.sh
-	./bjam -j$job link=static toolset=gcc cxxflags=-std=gnu++0x --with-system release &
+# DB
+cd $VCASH_ROOT
+wget --no-check-certificate "https://download.oracle.com/berkeley-db/db-6.1.29.NC.tar.gz"
+echo "e3404de2e111e95751107d30454f569be9ec97325d5ea302c95a058f345dfe0e 6.1.29.NC.tar.gz" | sha256sum -c
+tar -xzf db-6.1.29.NC.tar.gz
+echo "Compile & install db in deps folder" | tee -a $VCASH_ROOT/build.log
+cd db-6.1.29.NC/build_unix/
+mkdir -p $VCASH_ROOT/src/deps/db/
+../dist/configure --enable-cxx --disable-shared --prefix=$VCASH_ROOT/src/deps/db/
+make -j$job && make install
 
-	# Clean
-	cd $VCASH_ROOT
-	echo "Clean after install" | tee -a $VCASH_ROOT/build.log
-	rm -Rf db-4.8.30/ openssl-*/
-	rm openssl-*.tar.gz db-4.8.30.tar.gz boost_1_53_0.tar.gz
-fi
+# Boost
+cd $VCASH_ROOT
+wget "https://sourceforge.net/projects/boost/files/boost/1.53.0/boost_1_53_0.tar.gz"
+echo "7c4d1515e0310e7f810cbbc19adb9b2d425f443cc7a00b4599742ee1bdfd4c39  boost_1_53_0.tar.gz" | sha256sum -c
+echo "Extract boost" | tee -a $VCASH_ROOT/build.log
+tar -xzf boost_1_53_0.tar.gz
+echo "mv boost to deps folder & rename" | tee -a $VCASH_ROOT/build.log
+mv boost_1_53_0 src/deps/boost
+cd $VCASH_ROOT/src/deps/boost/
+echo "Build boost system" | tee -a $VCASH_ROOT/build.log
+./bootstrap.sh
+./bjam -j$job link=static toolset=gcc cxxflags=-std=gnu++0x --with-system release &
+
+# Clean
+cd $VCASH_ROOT
+echo "Clean after install" | tee -a $VCASH_ROOT/build.log
+rm -Rf db-4.8.30/ openssl-*/
+rm openssl-*.tar.gz db-4.8.30.tar.gz boost_1_53_0.tar.gz
 
 # Vcash daemon
 echo "vcashd bjam build" | tee -a $VCASH_ROOT/build.log
