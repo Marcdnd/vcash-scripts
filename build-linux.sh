@@ -90,7 +90,7 @@ make -j$job depend && make -j$job && make install
 # DB
 cd $VCASH_ROOT
 wget --no-check-certificate "https://download.oracle.com/berkeley-db/db-6.1.29.NC.tar.gz"
-echo "e3404de2e111e95751107d30454f569be9ec97325d5ea302c95a058f345dfe0e 6.1.29.NC.tar.gz" | sha256sum -c
+echo "e3404de2e111e95751107d30454f569be9ec97325d5ea302c95a058f345dfe0e db-6.1.29.NC.tar.gz" | sha256sum -c
 tar -xzf db-6.1.29.NC.tar.gz
 echo "Compile & install db in deps folder" | tee -a $VCASH_ROOT/build.log
 cd db-6.1.29.NC/build_unix/
